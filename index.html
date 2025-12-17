@@ -576,6 +576,12 @@
         .patient-actions {
             display: flex;
             gap: 10px;
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        .patient-item:hover .patient-actions {
+            opacity: 1;
         }
 
         .action-btn {
@@ -2367,10 +2373,352 @@
         </div>
     </div>
 
+    <!-- MODAL PARA NOVA PASTA (FICHAS) -->
+    <div class="modal-overlay" id="newFolderModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Nova Pasta</h3>
+                <button class="close-modal" id="closeFolderModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="folderForm">
+                    <div class="form-group">
+                        <label for="folderName">Nome da Pasta</label>
+                        <input type="text" id="folderName" class="form-control" required placeholder="Ex: Documentos Importantes">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="folderColor">Cor da Pasta (Opcional)</label>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <div class="color-option" data-color="#223bb4" style="background-color: #223bb4; width: 30px; height: 30px; border-radius: 50%; cursor: pointer;"></div>
+                            <div class="color-option" data-color="#2ecc71" style="background-color: #2ecc71; width: 30px; height: 30px; border-radius: 50%; cursor: pointer;"></div>
+                            <div class="color-option" data-color="#f39c12" style="background-color: #f39c12; width: 30px; height: 30px; border-radius: 50%; cursor: pointer;"></div>
+                            <div class="color-option" data-color="#e74c3c" style="background-color: #e74c3c; width: 30px; height: 30px; border-radius: 50%; cursor: pointer;"></div>
+                            <div class="color-option" data-color="#9b59b6" style="background-color: #9b59b6; width: 30px; height: 30px; border-radius: 50%; cursor: pointer;"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" id="cancelFolder">Cancelar</button>
+                        <button type="submit" class="btn">Criar Pasta</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL PARA NOVO DOCUMENTO -->
+    <div class="modal-overlay" id="newDocumentModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Novo Documento</h3>
+                <button class="close-modal" id="closeDocumentModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="documentForm">
+                    <div class="form-group">
+                        <label for="documentTitle">Título do Documento</label>
+                        <input type="text" id="documentTitle" class="form-control" required placeholder="Ex: Relatório Anual 2024">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="documentContent">Conteúdo</label>
+                        <textarea id="documentContent" class="form-control" rows="10" required placeholder="Digite o conteúdo do documento aqui..."></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="documentFolder">Pasta (Opcional)</label>
+                        <select id="documentFolder" class="form-control">
+                            <option value="">Sem pasta</option>
+                        </select>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" id="cancelDocument">Cancelar</button>
+                        <button type="submit" class="btn">Salvar Documento</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL PARA ENVIAR ARQUIVO -->
+    <div class="modal-overlay" id="uploadFileModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Enviar Arquivo</h3>
+                <button class="close-modal" id="closeUploadModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="uploadForm">
+                    <div class="form-group">
+                        <label for="fileInput">Selecione um arquivo</label>
+                        <input type="file" id="fileInput" class="form-control" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx">
+                        <small class="text-muted">Formatos permitidos: JPG, PNG, PDF, DOC, DOCX (Máx: 10MB)</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="fileName">Nome do Arquivo (Opcional)</label>
+                        <input type="text" id="fileName" class="form-control" placeholder="Deixe em branco para usar o nome original">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="fileFolder">Pasta (Opcional)</label>
+                        <select id="fileFolder" class="form-control">
+                            <option value="">Sem pasta</option>
+                        </select>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" id="cancelUpload">Cancelar</button>
+                        <button type="submit" class="btn">Enviar Arquivo</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script>
         // ============================================
-        // CONFIGURAÇÃO INICIAL
+        // BANCO DE DADOS SIMULADO
         // ============================================
+        
+        // Sistema de banco de dados em localStorage com melhor estrutura
+        class Database {
+            constructor() {
+                this.prefix = 'psicogestao_';
+                this.initialize();
+            }
+            
+            initialize() {
+                // Inicializar todas as tabelas se não existirem
+                const tables = ['patients', 'appointments', 'reports', 'payments', 'activities', 'folders', 'documents', 'files', 'settings'];
+                
+                tables.forEach(table => {
+                    if (!localStorage.getItem(this.prefix + table)) {
+                        localStorage.setItem(this.prefix + table, JSON.stringify([]));
+                    }
+                });
+                
+                // Inicializar configurações padrão
+                if (!localStorage.getItem(this.prefix + 'settings')) {
+                    localStorage.setItem(this.prefix + 'settings', JSON.stringify([
+                        { key: 'theme', value: 'light' },
+                        { key: 'user_avatar', value: 'A' },
+                        { key: 'user_name', value: 'Andrea' }
+                    ]));
+                }
+            }
+            
+            // Métodos genéricos
+            getAll(table) {
+                const data = localStorage.getItem(this.prefix + table);
+                return data ? JSON.parse(data) : [];
+            }
+            
+            save(table, data) {
+                localStorage.setItem(this.prefix + table, JSON.stringify(data));
+            }
+            
+            // Métodos específicos para cada tabela
+            getPatients() {
+                return this.getAll('patients');
+            }
+            
+            savePatient(patient) {
+                const patients = this.getPatients();
+                if (patient.id) {
+                    const index = patients.findIndex(p => p.id === patient.id);
+                    if (index !== -1) {
+                        patients[index] = patient;
+                    }
+                } else {
+                    patient.id = this.generateId(patients);
+                    patient.createdAt = new Date().toISOString();
+                    patients.push(patient);
+                }
+                this.save('patients', patients);
+                return patient;
+            }
+            
+            deletePatient(id) {
+                const patients = this.getPatients();
+                const filtered = patients.filter(p => p.id !== id);
+                this.save('patients', filtered);
+                
+                // Deletar também os dados relacionados
+                this.deleteRelatedData('appointments', 'patientId', id);
+                this.deleteRelatedData('reports', 'patientId', id);
+                this.deleteRelatedData('payments', 'patientId', id);
+            }
+            
+            getAppointments() {
+                return this.getAll('appointments');
+            }
+            
+            saveAppointment(appointment) {
+                const appointments = this.getAppointments();
+                if (appointment.id) {
+                    const index = appointments.findIndex(a => a.id === appointment.id);
+                    if (index !== -1) {
+                        appointments[index] = appointment;
+                    }
+                } else {
+                    appointment.id = this.generateId(appointments);
+                    appointment.createdAt = new Date().toISOString();
+                    appointments.push(appointment);
+                }
+                this.save('appointments', appointments);
+                return appointment;
+            }
+            
+            getReports() {
+                return this.getAll('reports');
+            }
+            
+            saveReport(report) {
+                const reports = this.getReports();
+                if (report.id) {
+                    const index = reports.findIndex(r => r.id === report.id);
+                    if (index !== -1) {
+                        reports[index] = report;
+                    }
+                } else {
+                    report.id = this.generateId(reports);
+                    report.createdAt = new Date().toISOString();
+                    reports.push(report);
+                }
+                this.save('reports', reports);
+                return report;
+            }
+            
+            deleteReport(id) {
+                const reports = this.getReports();
+                const filtered = reports.filter(r => r.id !== id);
+                this.save('reports', filtered);
+            }
+            
+            getPayments() {
+                return this.getAll('payments');
+            }
+            
+            savePayment(payment) {
+                const payments = this.getPayments();
+                if (payment.id) {
+                    const index = payments.findIndex(p => p.id === payment.id);
+                    if (index !== -1) {
+                        payments[index] = payment;
+                    }
+                } else {
+                    payment.id = this.generateId(payments);
+                    payment.createdAt = new Date().toISOString();
+                    payments.push(payment);
+                }
+                this.save('payments', payments);
+                return payment;
+            }
+            
+            getActivities() {
+                return this.getAll('activities');
+            }
+            
+            saveActivity(activity) {
+                const activities = this.getActivities();
+                activity.id = this.generateId(activities);
+                activity.timestamp = new Date().toISOString();
+                activities.unshift(activity);
+                
+                // Manter apenas as últimas 50 atividades
+                if (activities.length > 50) {
+                    activities.length = 50;
+                }
+                
+                this.save('activities', activities);
+                return activity;
+            }
+            
+            getFolders() {
+                return this.getAll('folders');
+            }
+            
+            saveFolder(folder) {
+                const folders = this.getFolders();
+                if (folder.id) {
+                    const index = folders.findIndex(f => f.id === folder.id);
+                    if (index !== -1) {
+                        folders[index] = folder;
+                    }
+                } else {
+                    folder.id = this.generateId(folders);
+                    folder.createdAt = new Date().toISOString();
+                    folders.push(folder);
+                }
+                this.save('folders', folders);
+                return folder;
+            }
+            
+            getDocuments() {
+                return this.getAll('documents');
+            }
+            
+            saveDocument(document) {
+                const documents = this.getDocuments();
+                if (document.id) {
+                    const index = documents.findIndex(d => d.id === document.id);
+                    if (index !== -1) {
+                        documents[index] = document;
+                    }
+                } else {
+                    document.id = this.generateId(documents);
+                    document.createdAt = new Date().toISOString();
+                    documents.push(document);
+                }
+                this.save('documents', documents);
+                return document;
+            }
+            
+            getSettings() {
+                return this.getAll('settings');
+            }
+            
+            saveSetting(key, value) {
+                const settings = this.getSettings();
+                const index = settings.findIndex(s => s.key === key);
+                
+                if (index !== -1) {
+                    settings[index].value = value;
+                } else {
+                    settings.push({ key, value });
+                }
+                
+                this.save('settings', settings);
+            }
+            
+            getSetting(key, defaultValue = null) {
+                const settings = this.getSettings();
+                const setting = settings.find(s => s.key === key);
+                return setting ? setting.value : defaultValue;
+            }
+            
+            // Métodos auxiliares
+            generateId(items) {
+                if (items.length === 0) return 1;
+                return Math.max(...items.map(item => item.id)) + 1;
+            }
+            
+            deleteRelatedData(table, field, value) {
+                const data = this.getAll(table);
+                const filtered = data.filter(item => item[field] !== value);
+                this.save(table, filtered);
+            }
+        }
+
+        // ============================================
+        // SISTEMA PRINCIPAL
+        // ============================================
+        
+        // Inicializar banco de dados
+        const db = new Database();
         
         // Credenciais do usuário
         const predefinedUser = {
@@ -2384,26 +2732,7 @@
         let selectedAppointmentId = null;
         let currentDate = new Date();
         let editingPatientId = null;
-        
-        // Banco de dados local (inicialmente vazio)
-        let patients = JSON.parse(localStorage.getItem('psico_patients')) || [];
-        let appointments = JSON.parse(localStorage.getItem('psico_appointments')) || [];
-        let reports = JSON.parse(localStorage.getItem('psico_reports')) || [];
-        let payments = JSON.parse(localStorage.getItem('psico_payments')) || [];
-        let activities = JSON.parse(localStorage.getItem('psico_activities')) || [];
-        let folders = JSON.parse(localStorage.getItem('psico_folders')) || [];
-        let documents = JSON.parse(localStorage.getItem('psico_documents')) || [];
-        
-        // Salvar dados no localStorage
-        function saveData() {
-            localStorage.setItem('psico_patients', JSON.stringify(patients));
-            localStorage.setItem('psico_appointments', JSON.stringify(appointments));
-            localStorage.setItem('psico_reports', JSON.stringify(reports));
-            localStorage.setItem('psico_payments', JSON.stringify(payments));
-            localStorage.setItem('psico_activities', JSON.stringify(activities));
-            localStorage.setItem('psico_folders', JSON.stringify(folders));
-            localStorage.setItem('psico_documents', JSON.stringify(documents));
-        }
+        let selectedColor = '#223bb4';
         
         // ============================================
         // FUNÇÕES UTILITÁRIAS
@@ -2467,18 +2796,32 @@
         
         function addActivity(type, description, patientName = '') {
             const activity = {
-                id: activities.length + 1,
                 type: type,
                 description: description,
-                patientName: patientName,
-                timestamp: new Date().toISOString()
+                patientName: patientName
             };
             
-            activities.unshift(activity);
-            if (activities.length > 10) activities = activities.slice(0, 10);
-            
-            saveData();
+            db.saveActivity(activity);
             updateActivityList();
+        }
+        
+        function showConfirmModal(message, onConfirm) {
+            document.getElementById('confirmMessage').textContent = message;
+            const modal = document.getElementById('confirmModal');
+            
+            modal.classList.add('active');
+            
+            // Configurar botão de confirmação
+            const confirmBtn = document.getElementById('confirmOk');
+            confirmBtn.onclick = () => {
+                modal.classList.remove('active');
+                onConfirm();
+            };
+            
+            // Configurar botão de cancelar
+            document.getElementById('confirmCancel').onclick = () => {
+                modal.classList.remove('active');
+            };
         }
         
         // ============================================
@@ -2504,18 +2847,11 @@
                 document.getElementById('appointmentTime').value = currentTime;
             }
             
+            // Carregar tema salvo
+            loadTheme();
+            
             // Configurar eventos
             setupEventListeners();
-            
-            // Carregar dados iniciais
-            if (currentUser) {
-                loadDashboard();
-                loadPatientsList();
-                updateAgendaDate();
-                loadAgenda();
-                loadReportsList();
-                updateFinanceSummary();
-            }
         });
         
         // ============================================
@@ -2524,61 +2860,70 @@
         
         function setupEventListeners() {
             // Login
-            loginForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                const username = document.getElementById('username').value;
-                const password = document.getElementById('password').value;
-                
-                // Simular carregamento
-                const loginBtn = document.querySelector('.login-btn');
-                const originalText = loginBtn.innerHTML;
-                loginBtn.innerHTML = '<div class="loading"></div>';
-                loginBtn.disabled = true;
-                
-                setTimeout(() => {
-                    if (username === predefinedUser.username && password === predefinedUser.password) {
-                        currentUser = { ...predefinedUser };
-                        userNameDisplay.textContent = currentUser.username;
-                        userAvatar.textContent = currentUser.username.charAt(0);
-                        
-                        // Esconder credenciais
-                        document.getElementById('username').value = '';
-                        document.getElementById('password').value = '';
-                        
-                        loginScreen.classList.add('hidden');
-                        mainSystem.classList.remove('hidden');
-                        
-                        // Carregar dados
-                        loadDashboard();
-                        loadPatientsList();
-                        updateAgendaDate();
-                        loadAgenda();
-                        loadReportsList();
-                        updateFinanceSummary();
-                        
-                        showNotification('Login realizado com sucesso!', 'success');
-                    } else {
-                        showNotification('Credenciais inválidas. Tente novamente.', 'error');
-                    }
+            const loginForm = document.getElementById('loginForm');
+            if (loginForm) {
+                loginForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
                     
-                    loginBtn.innerHTML = originalText;
-                    loginBtn.disabled = false;
-                }, 1000);
-            });
+                    const username = document.getElementById('username').value;
+                    const password = document.getElementById('password').value;
+                    
+                    // Simular carregamento
+                    const loginBtn = document.querySelector('.login-btn');
+                    const originalText = loginBtn.innerHTML;
+                    loginBtn.innerHTML = '<div class="loading"></div>';
+                    loginBtn.disabled = true;
+                    
+                    setTimeout(() => {
+                        if (username === predefinedUser.username && password === predefinedUser.password) {
+                            currentUser = { ...predefinedUser };
+                            document.getElementById('userNameDisplay').textContent = currentUser.username;
+                            document.getElementById('userAvatar').textContent = currentUser.username.charAt(0);
+                            document.getElementById('currentUserAvatar').textContent = currentUser.username.charAt(0);
+                            
+                            // Esconder credenciais
+                            document.getElementById('username').value = '';
+                            document.getElementById('password').value = '';
+                            
+                            document.getElementById('loginScreen').classList.add('hidden');
+                            document.getElementById('mainSystem').classList.remove('hidden');
+                            
+                            // Carregar dados
+                            loadDashboard();
+                            loadPatientsList();
+                            updateAgendaDate();
+                            loadAgenda();
+                            loadReportsList();
+                            updateFinanceSummary();
+                            loadFolders();
+                            loadDocuments();
+                            
+                            showNotification('Login realizado com sucesso!', 'success');
+                        } else {
+                            showNotification('Credenciais inválidas. Tente novamente.', 'error');
+                        }
+                        
+                        loginBtn.innerHTML = originalText;
+                        loginBtn.disabled = false;
+                    }, 1000);
+                });
+            }
             
             // Logout com confirmação
-            logoutBtn.addEventListener('click', function() {
-                showConfirmModal(
-                    'Tem certeza que deseja sair do sistema?',
-                    () => {
-                        currentUser = null;
-                        mainSystem.classList.add('hidden');
-                        loginScreen.classList.remove('hidden');
-                        showNotification('Logout realizado com sucesso.', 'success');
-                    }
-                );
-            });
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', function() {
+                    showConfirmModal(
+                        'Tem certeza que deseja sair do sistema?',
+                        () => {
+                            currentUser = null;
+                            document.getElementById('mainSystem').classList.add('hidden');
+                            document.getElementById('loginScreen').classList.remove('hidden');
+                            showNotification('Logout realizado com sucesso.', 'success');
+                        }
+                    );
+                });
+            }
             
             // Navegação entre páginas
             document.querySelectorAll('.nav-item').forEach(item => {
@@ -2604,20 +2949,24 @@
                         updateFinanceSummary();
                     } else if (pageId === 'reportsPage') {
                         loadReportsList();
+                    } else if (pageId === 'filesPage') {
+                        loadFolders();
+                    } else if (pageId === 'documentsPage') {
+                        loadDocuments();
                     }
                 });
             });
             
             // Novo paciente
-            newPatientBtn.addEventListener('click', () => openPatientModal());
-            emptyNewPatientBtn?.addEventListener('click', () => openPatientModal());
+            document.getElementById('newPatientBtn')?.addEventListener('click', () => openPatientModal());
+            document.getElementById('emptyNewPatientBtn')?.addEventListener('click', () => openPatientModal());
             
             // Nova consulta
-            newAppointmentBtn.addEventListener('click', () => openAppointmentModal());
-            quickAppointment?.addEventListener('click', () => openAppointmentModal());
+            document.getElementById('newAppointmentBtn')?.addEventListener('click', () => openAppointmentModal());
+            document.getElementById('quickAppointment')?.addEventListener('click', () => openAppointmentModal());
             
             // Novo pagamento
-            newPaymentBtn.addEventListener('click', () => {
+            document.getElementById('newPaymentBtn')?.addEventListener('click', () => {
                 const paymentForm = document.getElementById('paymentForm');
                 paymentForm.reset();
                 document.getElementById('paymentDate').value = new Date().toISOString().split('T')[0];
@@ -2626,109 +2975,92 @@
             });
             
             // Novo relatório
-            newReportBtn.addEventListener('click', () => openReportModal());
+            document.getElementById('newReportBtn')?.addEventListener('click', () => openReportModal());
             
             // Navegação da agenda
-            prevDayBtn?.addEventListener('click', () => {
+            document.getElementById('prevDay')?.addEventListener('click', () => {
                 currentDate.setDate(currentDate.getDate() - 1);
                 updateAgendaDate();
                 loadAgenda();
             });
             
-            nextDayBtn?.addEventListener('click', () => {
+            document.getElementById('nextDay')?.addEventListener('click', () => {
                 currentDate.setDate(currentDate.getDate() + 1);
                 updateAgendaDate();
                 loadAgenda();
             });
             
-            todayBtn?.addEventListener('click', () => {
+            document.getElementById('todayBtn')?.addEventListener('click', () => {
                 currentDate = new Date();
                 updateAgendaDate();
                 loadAgenda();
             });
             
+            // Botão bloquear horário
+            document.getElementById('blockTimeBtn')?.addEventListener('click', () => {
+                showNotification('Funcionalidade de bloquear horário em desenvolvimento.', 'info');
+            });
+            
             // Formulário de pagamento
-            document.getElementById('paymentForm')?.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                const patientId = document.getElementById('paymentPatient').value;
-                const date = document.getElementById('paymentDate').value;
-                const amount = parseFloat(document.getElementById('paymentAmount').value);
-                const type = document.getElementById('paymentType').value;
-                const description = document.getElementById('paymentDescription').value;
-                
-                if (!patientId) {
-                    showNotification('Selecione um paciente.', 'error');
-                    return;
-                }
-                
-                if (amount <= 0) {
-                    showNotification('Informe um valor válido.', 'error');
-                    return;
-                }
-                
-                const patient = patients.find(p => p.id == patientId);
-                
-                if (patient) {
-                    const payment = {
-                        id: payments.length + 1,
-                        patientId: patient.id,
-                        patientName: `${patient.firstName} ${patient.lastName}`,
-                        date: date,
-                        amount: amount,
-                        type: type,
-                        description: description,
-                        createdAt: new Date().toISOString()
-                    };
+            const paymentForm = document.getElementById('paymentForm');
+            if (paymentForm) {
+                paymentForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
                     
-                    payments.push(payment);
-                    saveData();
+                    const patientId = parseInt(document.getElementById('paymentPatient').value);
+                    const date = document.getElementById('paymentDate').value;
+                    const amount = parseFloat(document.getElementById('paymentAmount').value);
+                    const type = document.getElementById('paymentType').value;
+                    const description = document.getElementById('paymentDescription').value;
                     
-                    // Atualizar interface
-                    updateFinanceSummary();
+                    if (!patientId) {
+                        showNotification('Selecione um paciente.', 'error');
+                        return;
+                    }
                     
-                    // Limpar formulário
-                    this.reset();
-                    document.getElementById('paymentDate').value = new Date().toISOString().split('T')[0];
+                    if (amount <= 0) {
+                        showNotification('Informe um valor válido.', 'error');
+                        return;
+                    }
                     
-                    // Adicionar atividade
-                    addActivity('payment', `Pagamento registrado: R$ ${amount.toFixed(2)}`, patient.firstName);
+                    const patients = db.getPatients();
+                    const patient = patients.find(p => p.id === patientId);
                     
-                    showNotification(`Pagamento de R$ ${amount.toFixed(2)} registrado com sucesso!`, 'success');
-                }
-            });
-            
-            // Botão de excluir paciente
-            document.addEventListener('click', function(e) {
-                if (e.target.closest('.delete-patient-btn')) {
-                    const patientId = e.target.closest('.delete-patient-btn').getAttribute('data-id');
-                    deletePatient(patientId);
-                }
-            });
-            
-            // Botão de editar paciente
-            document.addEventListener('click', function(e) {
-                if (e.target.closest('.edit-patient-btn')) {
-                    const patientId = e.target.closest('.edit-patient-btn').getAttribute('data-id');
-                    editPatient(patientId);
-                }
-            });
-            
-            // Configurar tema
-            document.querySelectorAll('.theme-option').forEach(option => {
-                option.addEventListener('click', function() {
-                    const theme = this.getAttribute('data-theme');
-                    setTheme(theme);
+                    if (patient) {
+                        const payment = {
+                            patientId: patient.id,
+                            patientName: `${patient.firstName} ${patient.lastName}`,
+                            date: date,
+                            amount: amount,
+                            type: type,
+                            description: description
+                        };
+                        
+                        db.savePayment(payment);
+                        
+                        // Atualizar interface
+                        updateFinanceSummary();
+                        
+                        // Limpar formulário
+                        this.reset();
+                        document.getElementById('paymentDate').value = new Date().toISOString().split('T')[0];
+                        
+                        // Adicionar atividade
+                        addActivity('payment', `Pagamento registrado: R$ ${amount.toFixed(2)}`, patient.firstName);
+                        
+                        showNotification(`Pagamento de R$ ${amount.toFixed(2)} registrado com sucesso!`, 'success');
+                    }
                 });
-            });
-            
-            // Alterar foto
-            changePhotoBtn?.addEventListener('click', () => {
-                showNotification('Funcionalidade de alterar foto em desenvolvimento.', 'info');
-            });
+            }
             
             // Configurar modais
             setupModalEvents();
+            
+            // Configurar tema
+            setupThemeEvents();
+            
+            // Configurar botões de arquivos e documentos
+            setupFileAndDocumentEvents();
         }
         
         function setupModalEvents() {
@@ -2749,116 +3081,150 @@
             
             // Cancelar formulários
             document.getElementById('cancelAppointment')?.addEventListener('click', () => {
-                appointmentModal.classList.remove('active');
+                document.getElementById('appointmentModal').classList.remove('active');
             });
             
             document.getElementById('cancelPatient')?.addEventListener('click', () => {
-                patientModal.classList.remove('active');
+                document.getElementById('patientModal').classList.remove('active');
                 editingPatientId = null;
             });
             
             document.getElementById('cancelReport')?.addEventListener('click', () => {
-                reportModal.classList.remove('active');
+                document.getElementById('reportModal').classList.remove('active');
             });
             
             document.getElementById('cancelStatus')?.addEventListener('click', () => {
-                statusModal.classList.remove('active');
+                document.getElementById('statusModal').classList.remove('active');
+            });
+            
+            document.getElementById('cancelFolder')?.addEventListener('click', () => {
+                document.getElementById('newFolderModal').classList.remove('active');
+            });
+            
+            document.getElementById('cancelDocument')?.addEventListener('click', () => {
+                document.getElementById('newDocumentModal').classList.remove('active');
+            });
+            
+            document.getElementById('cancelUpload')?.addEventListener('click', () => {
+                document.getElementById('uploadFileModal').classList.remove('active');
             });
             
             // Formulário de consulta
-            document.getElementById('appointmentForm')?.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                const patientId = document.getElementById('appointmentPatient').value;
-                const date = document.getElementById('appointmentDate').value;
-                const time = document.getElementById('appointmentTime').value;
-                const duration = parseInt(document.getElementById('appointmentDuration').value);
-                const type = document.getElementById('appointmentType').value;
-                const notes = document.getElementById('appointmentNotes').value;
-                
-                // Validações
-                const selectedDate = new Date(date);
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                
-                // Não permitir datas passadas
-                if (selectedDate < today) {
-                    showNotification('Não é possível agendar consultas para datas passadas.', 'error');
-                    return;
-                }
-                
-                // Se for hoje, não permitir horários passados
-                if (selectedDate.getTime() === today.getTime()) {
-                    const now = new Date();
-                    const [hours, minutes] = time.split(':').map(Number);
-                    const appointmentTime = new Date();
-                    appointmentTime.setHours(hours, minutes, 0, 0);
+            const appointmentForm = document.getElementById('appointmentForm');
+            if (appointmentForm) {
+                appointmentForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
                     
-                    if (appointmentTime < now) {
-                        showNotification('Não é possível agendar consultas para horários passados.', 'error');
+                    const patientId = parseInt(document.getElementById('appointmentPatient').value);
+                    const date = document.getElementById('appointmentDate').value;
+                    const time = document.getElementById('appointmentTime').value;
+                    const duration = parseInt(document.getElementById('appointmentDuration').value);
+                    const type = document.getElementById('appointmentType').value;
+                    const notes = document.getElementById('appointmentNotes').value;
+                    
+                    // Validações
+                    const selectedDate = new Date(date);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    
+                    // Não permitir datas passadas
+                    if (selectedDate < today) {
+                        showNotification('Não é possível agendar consultas para datas passadas.', 'error');
                         return;
                     }
-                }
-                
-                const patient = patients.find(p => p.id == patientId);
-                
-                if (patient) {
-                    const appointment = {
-                        id: appointments.length + 1,
-                        patientId: patient.id,
-                        patientName: `${patient.firstName} ${patient.lastName}`,
-                        date: date,
-                        time: time,
-                        duration: duration,
-                        type: type,
-                        notes: notes,
-                        status: 'scheduled',
-                        createdAt: new Date().toISOString()
-                    };
                     
-                    appointments.push(appointment);
-                    saveData();
+                    // Se for hoje, não permitir horários passados
+                    if (selectedDate.getTime() === today.getTime()) {
+                        const now = new Date();
+                        const [hours, minutes] = time.split(':').map(Number);
+                        const appointmentTime = new Date();
+                        appointmentTime.setHours(hours, minutes, 0, 0);
+                        
+                        if (appointmentTime < now) {
+                            showNotification('Não é possível agendar consultas para horários passados.', 'error');
+                            return;
+                        }
+                    }
                     
-                    // Atualizar interface
-                    loadAgenda();
-                    loadDashboard();
+                    const patients = db.getPatients();
+                    const patient = patients.find(p => p.id === patientId);
                     
-                    // Fechar modal e limpar formulário
-                    appointmentModal.classList.remove('active');
-                    this.reset();
-                    
-                    // Configurar data e hora atuais
-                    const now = new Date();
-                    document.getElementById('appointmentDate').value = now.toISOString().split('T')[0];
-                    document.getElementById('appointmentDate').min = now.toISOString().split('T')[0];
-                    document.getElementById('appointmentTime').value = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-                    document.getElementById('appointmentDuration').value = 50;
-                    
-                    // Adicionar atividade
-                    addActivity('appointment', `Consulta agendada para ${formatDateTime(date, time)}`, patient.firstName);
-                    
-                    showNotification(`Consulta agendada para ${patient.firstName} ${patient.lastName} às ${time} do dia ${formatDate(date)}!`, 'success');
-                }
-            });
+                    if (patient) {
+                        const appointment = {
+                            patientId: patient.id,
+                            patientName: `${patient.firstName} ${patient.lastName}`,
+                            date: date,
+                            time: time,
+                            duration: duration,
+                            type: type,
+                            notes: notes,
+                            status: 'scheduled'
+                        };
+                        
+                        db.saveAppointment(appointment);
+                        
+                        // Atualizar interface
+                        loadAgenda();
+                        loadDashboard();
+                        
+                        // Fechar modal e limpar formulário
+                        document.getElementById('appointmentModal').classList.remove('active');
+                        appointmentForm.reset();
+                        
+                        // Configurar data e hora atuais
+                        const now = new Date();
+                        document.getElementById('appointmentDate').value = now.toISOString().split('T')[0];
+                        document.getElementById('appointmentDate').min = now.toISOString().split('T')[0];
+                        document.getElementById('appointmentTime').value = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+                        document.getElementById('appointmentDuration').value = 50;
+                        
+                        // Adicionar atividade
+                        addActivity('appointment', `Consulta agendada para ${formatDateTime(date, time)}`, patient.firstName);
+                        
+                        showNotification(`Consulta agendada para ${patient.firstName} ${patient.lastName} às ${time} do dia ${formatDate(date)}!`, 'success');
+                    }
+                });
+            }
             
             // Formulário de paciente
-            document.getElementById('patientForm')?.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                const firstName = document.getElementById('patientFirstName').value.trim();
-                const lastName = document.getElementById('patientLastName').value.trim();
-                const birthDate = document.getElementById('patientBirthDateInput').value;
-                const gender = document.getElementById('patientGender').value;
-                const cpf = document.getElementById('patientCPFInput').value;
-                const phone = document.getElementById('patientPhoneInput').value;
-                const email = document.getElementById('patientEmailInput').value;
-                
-                if (editingPatientId) {
-                    // Editar paciente existente
-                    const patientIndex = patients.findIndex(p => p.id == editingPatientId);
-                    if (patientIndex !== -1) {
-                        patients[patientIndex] = {
-                            ...patients[patientIndex],
+            const patientForm = document.getElementById('patientForm');
+            if (patientForm) {
+                patientForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const firstName = document.getElementById('patientFirstName').value.trim();
+                    const lastName = document.getElementById('patientLastName').value.trim();
+                    const birthDate = document.getElementById('patientBirthDateInput').value;
+                    const gender = document.getElementById('patientGender').value;
+                    const cpf = document.getElementById('patientCPFInput').value;
+                    const phone = document.getElementById('patientPhoneInput').value;
+                    const email = document.getElementById('patientEmailInput').value;
+                    
+                    if (editingPatientId) {
+                        // Editar paciente existente
+                        const patients = db.getPatients();
+                        const patientIndex = patients.findIndex(p => p.id === editingPatientId);
+                        if (patientIndex !== -1) {
+                            patients[patientIndex] = {
+                                ...patients[patientIndex],
+                                firstName,
+                                lastName,
+                                birthDate,
+                                gender,
+                                cpf,
+                                phone,
+                                email,
+                                updatedAt: new Date().toISOString()
+                            };
+                            
+                            db.save('patients', patients);
+                            
+                            showNotification(`Paciente ${firstName} ${lastName} atualizado com sucesso!`, 'success');
+                            addActivity('patient', `Paciente ${firstName} ${lastName} atualizado`, firstName);
+                        }
+                    } else {
+                        // Novo paciente
+                        const patient = {
                             firstName,
                             lastName,
                             birthDate,
@@ -2866,112 +3232,96 @@
                             cpf,
                             phone,
                             email,
-                            updatedAt: new Date().toISOString()
+                            status: 'active',
+                            firstSessionDate: new Date().toISOString().split('T')[0],
+                            sessionFrequency: 'weekly',
+                            therapyReason: 'A ser definido na primeira sessão'
                         };
                         
-                        showNotification(`Paciente ${firstName} ${lastName} atualizado com sucesso!`, 'success');
-                        addActivity('patient', `Paciente ${firstName} ${lastName} atualizado`, firstName);
+                        db.savePatient(patient);
+                        showNotification(`Paciente ${firstName} ${lastName} cadastrado com sucesso!`, 'success');
+                        addActivity('patient', `Paciente ${firstName} ${lastName} cadastrado`, firstName);
                     }
-                } else {
-                    // Novo paciente
-                    const patient = {
-                        id: patients.length + 1,
-                        firstName,
-                        lastName,
-                        birthDate,
-                        gender,
-                        cpf,
-                        phone,
-                        email,
-                        status: 'active',
-                        createdAt: new Date().toISOString(),
-                        firstSessionDate: new Date().toISOString().split('T')[0],
-                        sessionFrequency: 'weekly',
-                        therapyReason: 'A ser definido na primeira sessão'
-                    };
-                    
-                    patients.push(patient);
-                    showNotification(`Paciente ${firstName} ${lastName} cadastrado com sucesso!`, 'success');
-                    addActivity('patient', `Paciente ${firstName} ${lastName} cadastrado`, firstName);
-                }
-                
-                saveData();
-                
-                // Atualizar interface
-                loadPatientsList();
-                loadDashboard();
-                
-                // Fechar modal e limpar formulário
-                patientModal.classList.remove('active');
-                this.reset();
-                editingPatientId = null;
-                
-                // Selecionar o paciente recém-criado/editado
-                if (!editingPatientId) {
-                    const newPatient = patients[patients.length - 1];
-                    setTimeout(() => selectPatient(newPatient.id), 100);
-                }
-            });
-            
-            // Formulário de relatório
-            document.getElementById('reportForm')?.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                const patientId = document.getElementById('reportPatient').value;
-                const appointmentId = document.getElementById('reportAppointment').value;
-                const date = document.getElementById('reportDate').value;
-                const type = document.getElementById('reportType').value;
-                const title = document.getElementById('reportTitle').value.trim();
-                const content = document.getElementById('reportContent').value.trim();
-                
-                const patient = patients.find(p => p.id == patientId);
-                const appointment = appointments.find(a => a.id == appointmentId);
-                
-                if (patient && appointment) {
-                    // Verificar se a sessão já foi realizada
-                    const sessionDate = new Date(appointment.date);
-                    const reportDate = new Date(date);
-                    
-                    if (sessionDate > reportDate) {
-                        showNotification('Não é possível criar relatório para uma sessão futura.', 'error');
-                        return;
-                    }
-                    
-                    const report = {
-                        id: reports.length + 1,
-                        patientId: patient.id,
-                        patientName: `${patient.firstName} ${patient.lastName}`,
-                        appointmentId: appointment.id,
-                        date: date,
-                        type: type,
-                        title: title,
-                        content: content,
-                        author: currentUser.username,
-                        createdAt: new Date().toISOString()
-                    };
-                    
-                    reports.push(report);
-                    saveData();
                     
                     // Atualizar interface
-                    loadReportsList();
+                    loadPatientsList();
                     loadDashboard();
                     
                     // Fechar modal e limpar formulário
-                    reportModal.classList.remove('active');
-                    this.reset();
-                    document.getElementById('reportDate').value = new Date().toISOString().split('T')[0];
+                    document.getElementById('patientModal').classList.remove('active');
+                    patientForm.reset();
+                    editingPatientId = null;
                     
-                    // Adicionar atividade
-                    addActivity('report', `Relatório "${title}" criado`, patient.firstName);
+                    // Selecionar o paciente recém-criado/editado
+                    if (!editingPatientId) {
+                        const patients = db.getPatients();
+                        const newPatient = patients[patients.length - 1];
+                        setTimeout(() => selectPatient(newPatient.id), 100);
+                    }
+                });
+            }
+            
+            // Formulário de relatório
+            const reportForm = document.getElementById('reportForm');
+            if (reportForm) {
+                reportForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
                     
-                    showNotification(`Relatório criado com sucesso para ${patient.firstName} ${patient.lastName}!`, 'success');
-                }
-            });
+                    const patientId = parseInt(document.getElementById('reportPatient').value);
+                    const appointmentId = parseInt(document.getElementById('reportAppointment').value);
+                    const date = document.getElementById('reportDate').value;
+                    const type = document.getElementById('reportType').value;
+                    const title = document.getElementById('reportTitle').value.trim();
+                    const content = document.getElementById('reportContent').value.trim();
+                    
+                    const patients = db.getPatients();
+                    const appointments = db.getAppointments();
+                    const patient = patients.find(p => p.id === patientId);
+                    const appointment = appointments.find(a => a.id === appointmentId);
+                    
+                    if (patient && appointment) {
+                        // Verificar se a sessão já foi realizada
+                        const sessionDate = new Date(appointment.date);
+                        const reportDate = new Date(date);
+                        
+                        if (sessionDate > reportDate) {
+                            showNotification('Não é possível criar relatório para uma sessão futura.', 'error');
+                            return;
+                        }
+                        
+                        const report = {
+                            patientId: patient.id,
+                            patientName: `${patient.firstName} ${patient.lastName}`,
+                            appointmentId: appointment.id,
+                            date: date,
+                            type: type,
+                            title: title,
+                            content: content,
+                            author: currentUser.username
+                        };
+                        
+                        db.saveReport(report);
+                        
+                        // Atualizar interface
+                        loadReportsList();
+                        loadDashboard();
+                        
+                        // Fechar modal e limpar formulário
+                        document.getElementById('reportModal').classList.remove('active');
+                        reportForm.reset();
+                        document.getElementById('reportDate').value = new Date().toISOString().split('T')[0];
+                        
+                        // Adicionar atividade
+                        addActivity('report', `Relatório "${title}" criado`, patient.firstName);
+                        
+                        showNotification(`Relatório criado com sucesso para ${patient.firstName} ${patient.lastName}!`, 'success');
+                    }
+                });
+            }
             
             // Atualizar lista de sessões quando selecionar paciente no relatório
             document.getElementById('reportPatient')?.addEventListener('change', function() {
-                updateReportAppointmentOptions(this.value);
+                updateReportAppointmentOptions(parseInt(this.value));
             });
             
             // Botões do modal de status da consulta
@@ -2985,12 +3335,191 @@
             
             document.getElementById('markRescheduled')?.addEventListener('click', () => {
                 showNotification('Funcionalidade de reagendamento em desenvolvimento.', 'info');
-                statusModal.classList.remove('active');
+                document.getElementById('statusModal').classList.remove('active');
             });
             
-            // Modal de confirmação
-            document.getElementById('confirmCancel')?.addEventListener('click', () => {
-                document.getElementById('confirmModal').classList.remove('active');
+            // Opções de cor para pastas
+            document.querySelectorAll('.color-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    selectedColor = this.getAttribute('data-color');
+                    document.querySelectorAll('.color-option').forEach(opt => {
+                        opt.style.border = 'none';
+                    });
+                    this.style.border = '2px solid white';
+                    this.style.boxShadow = '0 0 0 2px var(--primary-color)';
+                });
+            });
+            
+            // Formulário de nova pasta
+            const folderForm = document.getElementById('folderForm');
+            if (folderForm) {
+                folderForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const folderName = document.getElementById('folderName').value.trim();
+                    
+                    if (folderName) {
+                        const folder = {
+                            name: folderName,
+                            color: selectedColor,
+                            fileCount: 0
+                        };
+                        
+                        db.saveFolder(folder);
+                        
+                        // Atualizar interface
+                        loadFolders();
+                        
+                        // Fechar modal e limpar formulário
+                        document.getElementById('newFolderModal').classList.remove('active');
+                        folderForm.reset();
+                        selectedColor = '#223bb4';
+                        
+                        showNotification(`Pasta "${folderName}" criada com sucesso!`, 'success');
+                    }
+                });
+            }
+            
+            // Formulário de novo documento
+            const documentForm = document.getElementById('documentForm');
+            if (documentForm) {
+                documentForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const title = document.getElementById('documentTitle').value.trim();
+                    const content = document.getElementById('documentContent').value.trim();
+                    const folderId = document.getElementById('documentFolder').value ? parseInt(document.getElementById('documentFolder').value) : null;
+                    
+                    if (title && content) {
+                        const document = {
+                            title: title,
+                            content: content,
+                            folderId: folderId,
+                            type: 'document'
+                        };
+                        
+                        db.saveDocument(document);
+                        
+                        // Atualizar interface
+                        loadDocuments();
+                        
+                        // Fechar modal e limpar formulário
+                        document.getElementById('newDocumentModal').classList.remove('active');
+                        documentForm.reset();
+                        
+                        showNotification(`Documento "${title}" criado com sucesso!`, 'success');
+                    }
+                });
+            }
+            
+            // Formulário de upload de arquivo
+            const uploadForm = document.getElementById('uploadForm');
+            if (uploadForm) {
+                uploadForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const fileInput = document.getElementById('fileInput');
+                    const fileName = document.getElementById('fileName').value.trim();
+                    const folderId = document.getElementById('fileFolder').value ? parseInt(document.getElementById('fileFolder').value) : null;
+                    
+                    if (fileInput.files.length > 0) {
+                        const file = fileInput.files[0];
+                        const fileSizeMB = file.size / (1024 * 1024);
+                        
+                        if (fileSizeMB > 10) {
+                            showNotification('O arquivo é muito grande. Tamanho máximo: 10MB.', 'error');
+                            return;
+                        }
+                        
+                        const finalFileName = fileName || file.name;
+                        
+                        // Simular upload
+                        setTimeout(() => {
+                            // Adicionar à lista de arquivos
+                            const files = db.getAll('files');
+                            const newFile = {
+                                id: db.generateId(files),
+                                name: finalFileName,
+                                originalName: file.name,
+                                size: file.size,
+                                type: file.type,
+                                folderId: folderId,
+                                uploadedAt: new Date().toISOString()
+                            };
+                            files.push(newFile);
+                            db.save('files', files);
+                            
+                            // Atualizar contagem da pasta se necessário
+                            if (folderId) {
+                                const folders = db.getFolders();
+                                const folderIndex = folders.findIndex(f => f.id === folderId);
+                                if (folderIndex !== -1) {
+                                    folders[folderIndex].fileCount = (folders[folderIndex].fileCount || 0) + 1;
+                                    db.save('folders', folders);
+                                }
+                            }
+                            
+                            // Fechar modal e limpar formulário
+                            document.getElementById('uploadFileModal').classList.remove('active');
+                            uploadForm.reset();
+                            fileInput.value = '';
+                            
+                            showNotification(`Arquivo "${finalFileName}" enviado com sucesso!`, 'success');
+                        }, 1000);
+                    } else {
+                        showNotification('Selecione um arquivo para enviar.', 'error');
+                    }
+                });
+            }
+        }
+        
+        function setupThemeEvents() {
+            // Alterar foto
+            document.getElementById('changePhotoBtn')?.addEventListener('click', () => {
+                const newAvatar = prompt('Digite uma nova inicial para seu avatar (ex: A, B, C):', 'A');
+                if (newAvatar && newAvatar.length === 1) {
+                    document.getElementById('userAvatar').textContent = newAvatar;
+                    document.getElementById('currentUserAvatar').textContent = newAvatar;
+                    db.saveSetting('user_avatar', newAvatar);
+                    showNotification('Foto do perfil atualizada!', 'success');
+                }
+            });
+            
+            // Tema claro/escuro
+            document.querySelectorAll('.theme-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    const theme = this.getAttribute('data-theme');
+                    setTheme(theme);
+                });
+            });
+        }
+        
+        function setupFileAndDocumentEvents() {
+            // Nova pasta (Fichas)
+            document.getElementById('newFolderBtn')?.addEventListener('click', () => {
+                document.getElementById('newFolderModal').classList.add('active');
+                document.getElementById('folderName').focus();
+            });
+            
+            // Enviar arquivo
+            document.getElementById('uploadFileBtn')?.addEventListener('click', () => {
+                // Preencher lista de pastas
+                populateFolderSelect('fileFolder');
+                document.getElementById('uploadFileModal').classList.add('active');
+            });
+            
+            // Novo documento
+            document.getElementById('newDocumentBtn')?.addEventListener('click', () => {
+                // Preencher lista de pastas
+                populateFolderSelect('documentFolder');
+                document.getElementById('newDocumentModal').classList.add('active');
+                document.getElementById('documentTitle').focus();
+            });
+            
+            // Nova pasta (Documentos)
+            document.getElementById('newDocFolderBtn')?.addEventListener('click', () => {
+                document.getElementById('newFolderModal').classList.add('active');
+                document.getElementById('folderName').focus();
             });
         }
         
@@ -3000,6 +3529,11 @@
         
         function loadDashboard() {
             // Atualizar estatísticas
+            const patients = db.getPatients();
+            const appointments = db.getAppointments();
+            const reports = db.getReports();
+            const payments = db.getPayments();
+            
             const activePatientsCount = patients.filter(p => p.status === 'active').length;
             const today = new Date().toISOString().split('T')[0];
             const todayAppointmentsCount = appointments.filter(a => a.date === today).length;
@@ -3032,6 +3566,7 @@
         function updateActivityList() {
             const activityList = document.getElementById('activityList');
             const emptyActivity = document.getElementById('emptyActivity');
+            const activities = db.getActivities();
             
             if (activities.length === 0) {
                 activityList.innerHTML = '';
@@ -3103,6 +3638,7 @@
         function loadPatientsList() {
             const patientsList = document.getElementById('patientsList');
             const emptyPatientsList = document.getElementById('emptyPatientsList');
+            const patients = db.getPatients();
             
             if (patients.length === 0) {
                 patientsList.innerHTML = '';
@@ -3143,30 +3679,49 @@
                     </div>
                 `;
                 
+                // Evento para selecionar paciente
                 patientItem.addEventListener('click', function(e) {
                     if (!e.target.closest('.patient-actions')) {
                         selectPatient(patient.id);
                     }
                 });
                 
+                // Evento para editar paciente
+                const editBtn = patientItem.querySelector('.edit-patient-btn');
+                editBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    editPatient(patient.id);
+                });
+                
+                // Evento para excluir paciente
+                const deleteBtn = patientItem.querySelector('.delete-patient-btn');
+                deleteBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    deletePatient(patient.id);
+                });
+                
                 patientsList.appendChild(patientItem);
             });
             
             // Busca de pacientes
-            document.getElementById('patientSearch')?.addEventListener('input', function() {
-                const searchTerm = this.value.toLowerCase();
-                const patientItems = document.querySelectorAll('.patient-item');
-                
-                patientItems.forEach(item => {
-                    const patientName = item.querySelector('h4').textContent.toLowerCase();
-                    const shouldShow = patientName.includes(searchTerm) || searchTerm === '';
-                    item.style.display = shouldShow ? 'flex' : 'none';
+            const patientSearch = document.getElementById('patientSearch');
+            if (patientSearch) {
+                patientSearch.addEventListener('input', function() {
+                    const searchTerm = this.value.toLowerCase();
+                    const patientItems = document.querySelectorAll('.patient-item');
+                    
+                    patientItems.forEach(item => {
+                        const patientName = item.querySelector('h4').textContent.toLowerCase();
+                        const shouldShow = patientName.includes(searchTerm) || searchTerm === '';
+                        item.style.display = shouldShow ? 'flex' : 'none';
+                    });
                 });
-            });
+            }
         }
         
         function selectPatient(patientId) {
-            const patient = patients.find(p => p.id == patientId);
+            const patients = db.getPatients();
+            const patient = patients.find(p => p.id === patientId);
             if (!patient) return;
             
             selectedPatientId = patientId;
@@ -3174,7 +3729,7 @@
             // Atualizar seleção visual
             document.querySelectorAll('.patient-item').forEach(item => {
                 item.classList.remove('active');
-                if (item.getAttribute('data-id') == patientId) {
+                if (parseInt(item.getAttribute('data-id')) === patientId) {
                     item.classList.add('active');
                 }
             });
@@ -3236,7 +3791,8 @@
         }
         
         function loadTabContent(tabId, patientId) {
-            const patient = patients.find(p => p.id == patientId);
+            const patients = db.getPatients();
+            const patient = patients.find(p => p.id === patientId);
             if (!patient) return;
             
             const tabContent = document.getElementById(tabId + 'Tab');
@@ -3258,8 +3814,9 @@
         }
         
         function loadPatientSessions(patientId, container) {
+            const appointments = db.getAppointments();
             const patientAppointments = appointments
-                .filter(a => a.patientId == patientId)
+                .filter(a => a.patientId === patientId)
                 .sort((a, b) => new Date(b.date + 'T' + b.time) - new Date(a.date + 'T' + a.time));
             
             if (patientAppointments.length === 0) {
@@ -3312,8 +3869,9 @@
         }
         
         function loadPatientNotes(patientId, container) {
+            const reports = db.getReports();
             const patientReports = reports
-                .filter(r => r.patientId == patientId)
+                .filter(r => r.patientId === patientId)
                 .sort((a, b) => new Date(b.date) - new Date(a.date));
             
             if (patientReports.length === 0) {
@@ -3363,8 +3921,9 @@
         }
         
         function loadPatientFinance(patientId, container) {
+            const payments = db.getPayments();
             const patientPayments = payments
-                .filter(p => p.patientId == patientId)
+                .filter(p => p.patientId === patientId)
                 .sort((a, b) => new Date(b.date) - new Date(a.date));
             
             const totalPaid = patientPayments.reduce((sum, payment) => sum + payment.amount, 0);
@@ -3420,46 +3979,34 @@
             showConfirmModal(
                 'Tem certeza que deseja excluir este paciente? Esta ação não pode ser desfeita.',
                 () => {
-                    const patientIndex = patients.findIndex(p => p.id == patientId);
-                    if (patientIndex !== -1) {
-                        const patient = patients[patientIndex];
-                        
-                        // Remover paciente
-                        patients.splice(patientIndex, 1);
-                        
-                        // Remover consultas do paciente
-                        appointments = appointments.filter(a => a.patientId != patientId);
-                        
-                        // Remover relatórios do paciente
-                        reports = reports.filter(r => r.patientId != patientId);
-                        
-                        // Remover pagamentos do paciente
-                        payments = payments.filter(p => p.patientId != patientId);
-                        
-                        saveData();
-                        
-                        // Atualizar interface
-                        loadPatientsList();
-                        loadDashboard();
-                        loadAgenda();
-                        loadReportsList();
-                        updateFinanceSummary();
-                        
-                        // Esconder detalhes do paciente
-                        document.getElementById('emptyPatientDetail').classList.remove('hidden');
-                        document.getElementById('patientDetail').classList.add('hidden');
-                        
-                        // Adicionar atividade
-                        addActivity('patient', `Paciente ${patient.firstName} ${patient.lastName} excluído`);
-                        
-                        showNotification(`Paciente ${patient.firstName} ${patient.lastName} excluído com sucesso!`, 'success');
+                    db.deletePatient(patientId);
+                    
+                    // Atualizar interface
+                    loadPatientsList();
+                    loadDashboard();
+                    loadAgenda();
+                    loadReportsList();
+                    updateFinanceSummary();
+                    
+                    // Esconder detalhes do paciente
+                    document.getElementById('emptyPatientDetail').classList.remove('hidden');
+                    document.getElementById('patientDetail').classList.add('hidden');
+                    
+                    // Adicionar atividade
+                    const patients = db.getPatients();
+                    const deletedPatient = patients.find(p => p.id === patientId);
+                    if (deletedPatient) {
+                        addActivity('patient', `Paciente ${deletedPatient.firstName} ${deletedPatient.lastName} excluído`);
                     }
+                    
+                    showNotification('Paciente excluído com sucesso!', 'success');
                 }
             );
         }
         
         function editPatient(patientId) {
-            const patient = patients.find(p => p.id == patientId);
+            const patients = db.getPatients();
+            const patient = patients.find(p => p.id === patientId);
             if (!patient) return;
             
             editingPatientId = patientId;
@@ -3476,19 +4023,20 @@
             document.getElementById('patientSubmitBtn').textContent = 'Atualizar Paciente';
             
             // Mostrar modal
-            patientModal.classList.add('active');
+            document.getElementById('patientModal').classList.add('active');
         }
         
         function updateAgendaDate() {
-            if (!agendaDateDisplay) return;
+            if (!document.getElementById('agendaDateDisplay')) return;
             
             const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
-            agendaDateDisplay.textContent = currentDate.toLocaleDateString('pt-BR', options);
+            document.getElementById('agendaDateDisplay').textContent = currentDate.toLocaleDateString('pt-BR', options);
         }
         
         function loadAgenda() {
             const agendaDay = document.getElementById('agendaDay');
             const emptyAgenda = document.getElementById('emptyAgenda');
+            const appointments = db.getAppointments();
             const currentDateString = currentDate.toISOString().split('T')[0];
             const dayAppointments = appointments.filter(a => a.date === currentDateString);
             
@@ -3586,22 +4134,23 @@
         function openStatusModal(appointment) {
             document.getElementById('statusAppointmentInfo').textContent = 
                 `Consulta com ${appointment.patientName} em ${formatDate(appointment.date)} às ${appointment.time}`;
-            statusModal.classList.add('active');
+            document.getElementById('statusModal').classList.add('active');
         }
         
         function markAppointmentStatus(status) {
-            const appointmentIndex = appointments.findIndex(a => a.id == selectedAppointmentId);
+            const appointments = db.getAppointments();
+            const appointmentIndex = appointments.findIndex(a => a.id === selectedAppointmentId);
             if (appointmentIndex !== -1) {
                 appointments[appointmentIndex].status = status;
                 appointments[appointmentIndex].updatedAt = new Date().toISOString();
-                saveData();
+                db.save('appointments', appointments);
                 
                 // Atualizar interface
                 loadAgenda();
                 loadDashboard();
                 
                 // Fechar modal
-                statusModal.classList.remove('active');
+                document.getElementById('statusModal').classList.remove('active');
                 
                 // Mostrar notificação
                 const statusText = {
@@ -3627,7 +4176,8 @@
         }
         
         function openReportModalForAppointment(appointmentId) {
-            const appointment = appointments.find(a => a.id == appointmentId);
+            const appointments = db.getAppointments();
+            const appointment = appointments.find(a => a.id === appointmentId);
             if (!appointment) return;
             
             // Preencher formulário
@@ -3639,12 +4189,13 @@
             document.getElementById('reportTitle').value = `Sessão com ${appointment.patientName}`;
             
             // Mostrar modal
-            reportModal.classList.add('active');
+            document.getElementById('reportModal').classList.add('active');
         }
         
         function loadReportsList() {
             const reportsList = document.getElementById('reportsList');
             const emptyReports = document.getElementById('emptyReports');
+            const reports = db.getReports();
             
             if (reports.length === 0) {
                 reportsList.innerHTML = '';
@@ -3695,7 +4246,8 @@
         }
         
         function viewReport(reportId) {
-            const report = reports.find(r => r.id == reportId);
+            const reports = db.getReports();
+            const report = reports.find(r => r.id === reportId);
             if (!report) return;
             
             const typeText = {
@@ -3739,26 +4291,26 @@
             showConfirmModal(
                 'Tem certeza que deseja excluir este relatório? Esta ação não pode ser desfeita.',
                 () => {
-                    const reportIndex = reports.findIndex(r => r.id == reportId);
-                    if (reportIndex !== -1) {
-                        const report = reports[reportIndex];
-                        reports.splice(reportIndex, 1);
-                        saveData();
-                        
-                        // Atualizar interface
-                        loadReportsList();
-                        loadDashboard();
-                        
-                        // Adicionar atividade
-                        addActivity('report', `Relatório "${report.title}" excluído`, report.patientName);
-                        
-                        showNotification('Relatório excluído com sucesso!', 'success');
+                    db.deleteReport(reportId);
+                    
+                    // Atualizar interface
+                    loadReportsList();
+                    loadDashboard();
+                    
+                    // Adicionar atividade
+                    const reports = db.getReports();
+                    const deletedReport = reports.find(r => r.id === reportId);
+                    if (deletedReport) {
+                        addActivity('report', `Relatório "${deletedReport.title}" excluído`, deletedReport.patientName);
                     }
+                    
+                    showNotification('Relatório excluído com sucesso!', 'success');
                 }
             );
         }
         
         function updateFinanceSummary() {
+            const payments = db.getPayments();
             const totalBalance = payments.reduce((sum, payment) => sum + payment.amount, 0);
             document.getElementById('totalBalance').textContent = `R$ ${totalBalance.toFixed(2)}`;
             
@@ -3776,6 +4328,7 @@
             // Limpar e recriar opções
             select.innerHTML = '<option value="">Selecione um paciente</option>';
             
+            const patients = db.getPatients();
             patients.filter(p => p.status === 'active').forEach(patient => {
                 const option = document.createElement('option');
                 option.value = patient.id;
@@ -3797,8 +4350,9 @@
             if (!patientId) return;
             
             // Filtrar sessões do paciente
+            const appointments = db.getAppointments();
             const patientAppointments = appointments
-                .filter(a => a.patientId == patientId)
+                .filter(a => a.patientId === patientId)
                 .sort((a, b) => new Date(b.date + 'T' + b.time) - new Date(a.date + 'T' + a.time));
             
             patientAppointments.forEach(appointment => {
@@ -3808,6 +4362,22 @@
                                       appointment.type === 'couple' ? 'Casal' : 
                                       appointment.type === 'family' ? 'Familiar' : 
                                       appointment.type === 'assessment' ? 'Avaliação' : 'Emergência'}`;
+                select.appendChild(option);
+            });
+        }
+        
+        function populateFolderSelect(selectId) {
+            const select = document.getElementById(selectId);
+            if (!select) return;
+            
+            // Limpar opções
+            select.innerHTML = '<option value="">Sem pasta</option>';
+            
+            const folders = db.getFolders();
+            folders.forEach(folder => {
+                const option = document.createElement('option');
+                option.value = folder.id;
+                option.textContent = folder.name;
                 select.appendChild(option);
             });
         }
@@ -3823,12 +4393,13 @@
             document.getElementById('appointmentTime').value = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
             
             // Mostrar modal
-            appointmentModal.classList.add('active');
+            document.getElementById('appointmentModal').classList.add('active');
         }
         
         function openPatientModal() {
             // Limpar formulário
-            document.getElementById('patientForm').reset();
+            const patientForm = document.getElementById('patientForm');
+            patientForm.reset();
             editingPatientId = null;
             document.getElementById('patientModalTitle').textContent = 'Novo Paciente';
             document.getElementById('patientSubmitBtn').textContent = 'Salvar Paciente';
@@ -3840,7 +4411,7 @@
             document.getElementById('patientBirthDateInput').min = minDate.toISOString().split('T')[0];
             
             // Mostrar modal
-            patientModal.classList.add('active');
+            document.getElementById('patientModal').classList.add('active');
         }
         
         function openReportModal() {
@@ -3854,26 +4425,108 @@
             document.getElementById('reportContent').value = '';
             
             // Mostrar modal
-            reportModal.classList.add('active');
+            document.getElementById('reportModal').classList.add('active');
         }
         
-        function showConfirmModal(message, onConfirm) {
-            document.getElementById('confirmMessage').textContent = message;
-            const modal = document.getElementById('confirmModal');
+        function loadFolders() {
+            const foldersGrid = document.getElementById('foldersGrid');
+            const emptyFiles = document.getElementById('emptyFiles');
+            const folders = db.getFolders();
             
-            modal.classList.add('active');
+            if (folders.length === 0) {
+                foldersGrid.innerHTML = '';
+                emptyFiles.classList.remove('hidden');
+                return;
+            }
             
-            // Configurar botão de confirmação
-            const confirmBtn = document.getElementById('confirmOk');
-            confirmBtn.onclick = () => {
-                modal.classList.remove('active');
-                onConfirm();
-            };
+            emptyFiles.classList.add('hidden');
+            foldersGrid.innerHTML = '';
             
-            // Configurar botão de cancelar
-            document.getElementById('confirmCancel').onclick = () => {
-                modal.classList.remove('active');
-            };
+            folders.forEach(folder => {
+                const folderItem = document.createElement('div');
+                folderItem.className = 'folder-item';
+                folderItem.style.borderColor = folder.color;
+                
+                folderItem.innerHTML = `
+                    <i class="fas fa-folder"></i>
+                    <div class="folder-name">${folder.name}</div>
+                    <div class="folder-count">${folder.fileCount || 0} arquivos</div>
+                `;
+                
+                folderItem.addEventListener('click', () => {
+                    showNotification(`Abrindo pasta "${folder.name}"`, 'info');
+                });
+                
+                foldersGrid.appendChild(folderItem);
+            });
+        }
+        
+        function loadDocuments() {
+            const documentsGrid = document.getElementById('documentsGrid');
+            const emptyDocuments = document.getElementById('emptyDocuments');
+            const documents = db.getDocuments();
+            
+            if (documents.length === 0) {
+                documentsGrid.innerHTML = '';
+                emptyDocuments.classList.remove('hidden');
+                return;
+            }
+            
+            emptyDocuments.classList.add('hidden');
+            documentsGrid.innerHTML = '';
+            
+            documents.forEach(document => {
+                const documentItem = document.createElement('div');
+                documentItem.className = 'document-item';
+                
+                documentItem.innerHTML = `
+                    <i class="fas fa-file-alt"></i>
+                    <div class="document-name">${document.title}</div>
+                    <div class="document-date">${formatDate(document.createdAt)}</div>
+                `;
+                
+                documentItem.addEventListener('click', () => {
+                    viewDocument(document);
+                });
+                
+                documentsGrid.appendChild(documentItem);
+            });
+        }
+        
+        function viewDocument(document) {
+            showConfirmModal(
+                `Deseja visualizar o documento "${document.title}"?`,
+                () => {
+                    const modal = document.createElement('div');
+                    modal.className = 'modal-overlay active';
+                    modal.innerHTML = `
+                        <div class="modal">
+                            <div class="modal-header">
+                                <h3>${document.title}</h3>
+                                <button class="close-modal">&times;</button>
+                            </div>
+                            <div class="modal-body">
+                                <div style="white-space: pre-wrap; padding: 20px; background-color: var(--light-bg); border-radius: var(--border-radius-sm);">
+                                    ${document.content}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    document.body.appendChild(modal);
+                    
+                    // Configurar fechamento
+                    modal.querySelector('.close-modal').addEventListener('click', () => {
+                        modal.remove();
+                    });
+                    
+                    modal.addEventListener('click', (e) => {
+                        if (e.target === modal) {
+                            modal.remove();
+                        }
+                    });
+                }
+            );
         }
         
         function setTheme(theme) {
@@ -3903,12 +4556,13 @@
             }
             
             // Salvar preferência
-            localStorage.setItem('psico_theme', theme);
+            db.saveSetting('theme', theme);
         }
         
-        // Carregar tema salvo
-        const savedTheme = localStorage.getItem('psico_theme') || 'light';
-        setTheme(savedTheme);
+        function loadTheme() {
+            const savedTheme = db.getSetting('theme', 'light');
+            setTheme(savedTheme);
+        }
         
         // ============================================
         // FUNÇÕES GLOBAIS
@@ -3916,33 +4570,6 @@
         
         window.viewReport = viewReport;
         window.deleteReport = deleteReport;
-        
-        // Adicionar dados iniciais se estiver vazio
-        if (patients.length === 0) {
-            // Adicionar alguns dados de exemplo apenas para demonstração
-            const examplePatient = {
-                id: 1,
-                firstName: "João",
-                lastName: "Silva",
-                birthDate: "1989-03-15",
-                gender: "male",
-                cpf: "123.456.789-00",
-                phone: "(11) 99999-9999",
-                email: "joao.silva@email.com",
-                address: "Rua das Flores, 123 - São Paulo, SP",
-                occupation: "Engenheiro",
-                maritalStatus: "married",
-                referral: "indication",
-                firstSessionDate: new Date().toISOString().split('T')[0],
-                sessionFrequency: "weekly",
-                therapyReason: "Ansiedade e estresse no trabalho",
-                status: "active",
-                createdAt: new Date().toISOString()
-            };
-            
-            patients.push(examplePatient);
-            saveData();
-        }
     </script>
 </body>
 </html>
